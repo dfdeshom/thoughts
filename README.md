@@ -1,2 +1,1 @@
-toughts
-=======
+Mainly work-related thoughts
