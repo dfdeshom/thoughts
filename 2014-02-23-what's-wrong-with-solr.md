@@ -14,6 +14,9 @@ This will get easier and easier as more and more of  Solr can now be controlled 
 - the schema API, https://wiki.apache.org/solr/SchemaRESTAPI . Still needs some tweaks
 - the cores API, which I hope will disappear soon
 
+Viewing Solr as a database
+---------------------------
+
 People writing clients for Solr should also assume it's a database. For example, Solr needs to be configured such that clients never need to call `commit` and `optimize`. In fact, this seems like a mistake now that Solr has `autocommit` and `autosoftcommit` settings. Clients should just forget about this API call and assume the server configuration for committing data is sane. 
 
 It might not be bad idea to have a distribution of Solr with a striped-down, less flexible `solrconfig.xml`. There are many moving parts within this file. The same could be applied to `schema.xml` and making it optional will help.
