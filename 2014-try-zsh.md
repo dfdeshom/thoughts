@@ -1,0 +1,9 @@
+I've been using zsh for a month now as my shell and I like it. Here are some things that have made the switch worth it for me:
+
+- command history across shell sessions. This was the main reason I stopped using bash. Bash history is similar to "last closed session wins" where your history file gets overwritten by the last session you closed. In zsh, every session has access to the history of every other session which is handy since I run 10-12 screen sessions and sometimes several remote terminals.
+
+- command completion for commands and sub-commands, including ssh host completion. I've given up on updating my hosts file or ~/.ssh/config for logging into the hosts I want to log on to since machine names and IPs change so often. This is much simpler for me since I can type ssh cogtree@ue1a-[TAB] and see a list of corresponding hosts. http://www.sourceguru.net/ssh-host-completion-zsh-stylee/
+
+- `cdr`. It's a command that lets you jump to your most recently-used directories: http://zsh.sourceforge.net/Doc/Release/User-Contributions.html#Recent-Directories . It's similar to bash's stack functions (popd, etc) except I can actually see the stack, among other things.
+
+I highly recommend installing oh-my-zsh if you're using zsh, it has a lot of plugins enabled and configured out-of-the-box: https://github.com/robbyrussell/oh-my-zsh#setup
