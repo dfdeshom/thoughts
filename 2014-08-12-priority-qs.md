@@ -1,7 +1,7 @@
 Prioritiy queue issues w/ Kafka
 =================================
 
-We are atrying to implement a priority queue using only Kafka. This is part of a larger project to make Scrapy use Kafka as scheduling backend. One of the nice-to-havesss (if not necessities) is to have a priority queue so that you can put some requests in front of other if necessary.
+We are trying to implement a priority queue using only Kafka. This is part of a larger project to make Scrapy use Kafka as scheduling backend. One of the nice-to-haves (if not necessities) is to have a priority queue so that you can put some requests in front of other if necessary.
 
 So far, I've identified 2 ways to do this: multiple partitions or multiple topics
 
@@ -14,7 +14,7 @@ One caveat:
 from http://kafka.apache.org/documentation.html
 
 
-This is the ideal way, as Kafak writers say they prefer fewer larger topics with multiple partions over small topics:https://cwiki.apache.org/confluence/display/KAFKA/FAQ#FAQ-HowmanytopicscanIhave? Further, they say:
+This could be the ideal way, as Kafka writers say to prefer fewer larger topics with multiple partions over small topics:https://cwiki.apache.org/confluence/display/KAFKA/FAQ#FAQ-HowmanytopicscanIhave? Further, they say:
 
     > The actual scalability is for the most part determined by the number of total partitions across all topics not the number of topics itself 
     
@@ -22,11 +22,10 @@ which is good news if we're considering multiple topics instead. The drawback of
 
 Here are the possible schemes with multiple partions
 
-- bucketing: this is the easiest one: classify each request into 3 buckets: high, low, normal and use some cut-off point to classify those.  This isn't really a priority queue, but might work in 80% of cases
+- bucketing: this is the easiest one: classify each request into 3 buckets: high, low, normal and use some cut-off point to classify those. Use a partitioner to put messages in right partition. This isn't really a priority queue, but might be good enough
 
-- repicate the request over a fraction of totoal partition based on priority. The idea is that if you have 5 partitions, and have a request with high enough priority, you could write this message to the topic accrross 4 partitions, for example. this would increase the likelyhood that the request gets processed faster.
+- replicate the request over a fraction of total partition based on priority. The idea is that if you have 5 partitions, and have a request with high enough priority, you could write this message to the topic accrross 4 partitions, for example. this would increase the likelyhood that the request gets processed faster. We would have to deal with what hapens when the same request gets picked up by 2 different spiders. 
 
-- use probabilistic function to determine which partition to read/write from. We have 5 partitions, 1-5 each with an increasing probability of being read: 1/5, 2/5,..., 5/5. Not sure if switching partitions constantly would add overhead. 
 
 - what if we capped priorities at something reasonable, eg -100 to 100?  This is probably what we'll have to do.
 
