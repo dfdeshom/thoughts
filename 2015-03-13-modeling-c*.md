@@ -1,4 +1,4 @@
-A shorter
+Read the long version here:
 http://www.datastax.com/dev/blog/basic-rules-of-cassandra-data-modeling
 
 Wide rows only
