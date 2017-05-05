@@ -2,7 +2,9 @@ When it comes to server provisioning, I've only had experience with
 Chef. The new place I work in uses ansible and I was tasked with
 writing a playbook for deploying and configuring some of our software
 there. The whole experience was overall good. My main gripe with
-ansible is that it uses `yaml` files for running actions. I think
+ansible is that it uses `yaml` files for running actions. 
+
+I think
 that's a huge drawback: instead of having the full python language at
 your disposal for writing playbooks, you're limited a weird yaml file
 format that gets in your way the moment you want something more
@@ -22,6 +24,9 @@ https://github.com/dfdeshom/thoughts/blob/master/2016-06-10-chef-anti-patterns.m
  here, because only the deployment machine has to worry about having
  the right roles.
  
- The `ansible-lint` tool is also great for people like me using
- ansible for the first time, it forces you to write clearer
- playbooks. 
+ The other thing it gets right is `ansible-lint`, which
+ is great for people like me using
+ ansible for the first time, as it forces you to write clearer
+ playbooks and stick to conventions.
+ 
+ For now, I still think Chef is the superior choice: you can't beat the ruby DSL and I don't trust agentless monitoring tools  as much when it comes to making sure your servers are configured the way you want them to at all times.
