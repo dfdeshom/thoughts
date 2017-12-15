@@ -4,8 +4,8 @@ Upserting rows in postgresql 9.5 through spark
 
 Although the current Postgres JDBC data source allows SELECT and INSERT operations with Spark, it doesn't allow for upserts. Since Postgres 9.5 now finally support his handy operation, let's see how we can fake support of it through psycopg2. First, some background on some pitfalls of implmenting upserts
 
-Pie in the sky
-----------------
+## Pie in the sky
+
 Part of the reason Spark only supports INSERTs is that SQL database support for upsert operations varies a lot; up until recently Postgres did not even support it. The other reason is that upserts are not generally efficient at scale no matter how you approach them. There are 2 main approaches:
 
 - Server-side: let the database worry about data integrity and enforcing uniqueness constraints. If your constraint is expensive or you have hundreds of clients upserting, this operation will be slow: checking the constraint does not parallelize very well and requires a full  scan of the index created on the uniqueness constraint in some cases. You can see a great critique fo this approach here: https://github.com/apache/spark/pull/16692#issuecomment-274977343 . On some databases like Postgres, upserts require a UNIQUE index on the key or constraint to be upserted. That's just another operational detail to worry about.
@@ -17,11 +17,25 @@ There are drawbacks everywhere, but for our case we chose the server-side aproac
 - Using postgres to guarantee data ingrity was a must
 - our constraints would be simple fields, which would not be too expensive for the  DB to check against
 
-Generating records
---------------------
+## Generating records
+
 The easiest way to imagine how an upsert operation would take place would be to have an array of dicts, with the following constraints:
 
-- all dicts in the array have the same fields
-- the constraining field is present on all dicts
-- the constraining field's values are unique. This is to avoid 2 or more workers updating the same record in the database at the same time. This will lead to conflicts and the upsert operation will be canceled
+* all dicts in the array have the same fields
+
+* the constraining field is present on all dicts
+
+* the constraining field's values are unique. This is to avoid 2 or more workers updating the same record in the database at the same time. This will lead to conflicts and the upsert operation will be canceled.
+
+
+## Generating the upsert statement programatically
+
+The upsert statement itself is pretty straightforward. It's similar to a INSERT statement, with the the addition of a `ON CONFLICT DO UPDATE SET` clause. Here is what a statement might look like for upserting values into a table where the uniquesness constraint is on the `ID` field: 
+
+```sql
+INSERT INTO TABLE T(ID, ATTR1, ATTR2) VALUES (1,'A', 'B')
+ON CONFLICT(ID) DO UPDATE SET
+ATTR1=EXCLUDED.ATTR1,
+ATTR1=EXCLUDED.ATTR1;
+```
 
