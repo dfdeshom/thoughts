@@ -4,7 +4,7 @@ Upserting rows in postgresql 9.5 with Spark
 
 Although the current Postgres JDBC data source allows SELECT and INSERT operations with Spark, it doesn't allow for upserts. Since Postgres 9.5 now finally support his handy operation, let's see how we can fake support of it through psycopg2. First, some background on some pitfalls of implmenting upserts
 
-## Pie in the sky
+## Upserts are hard
 
 Part of the reason Spark only supports INSERTs is that SQL database support for upsert operations varies a lot; up until recently Postgres did not even support it. The other reason is that upserts are not generally efficient at scale no matter how you approach them. There are 2 main approaches:
 
@@ -12,6 +12,8 @@ Part of the reason Spark only supports INSERTs is that SQL database support for 
 
 - Client-side: let the client/code worry about data integrity. In this case, the client has to worry about identifying uniqueness constraints and merging records together. This can be quite error-prone. In addition, this approach means that  your database cannot guarantee the integrtiy of your data, any inconsistencies have to be resolved at the code level. You can see a good critique of this chalenges of this approach here: 
 https://github.com/apache/spark/pull/16685 .
+
+None of the approaches above provide a general satisfying solution to the general upsert problem for Spark users. 
 
 There are drawbacks everywhere, but for our case we chose the server-side aproach. The main reasons were:
 - Using postgres to guarantee data ingrity was a must
@@ -44,4 +46,20 @@ https://gist.github.com/dfdeshom/89497f7dcd81ad05464b19545a0094e2#file-upsert_st
 
 ## Doing the upsert
 
-After generating upsert statement for each item in the RDD, we just need to execute them. In reality we only need to generate the statement for one item: the handy function `psycopg2.extras.execute_batch` will execute the statement in batch against all dict entries in the RDD  : https://gist.github.com/dfdeshom/89497f7dcd81ad05464b19545a0094e2#file-upsert_rdd-py . We're using `mapPartition` here so we don't instantiate thousands of PG connections. We're also using `collect()` to force the RDD to execute all the upsert statements we generated
+After generating upsert statement for each item in the RDD, we just need to execute them. In reality we only need to generate the statement for one item: the handy function `psycopg2.extras.execute_batch` will execute the statement in batch against all dict entries in the RDD  : https://gist.github.com/dfdeshom/89497f7dcd81ad05464b19545a0094e2#file-upsert_rdd-py . We're using `mapPartition` here so we don't instantiate thousands of PG connections. We're also using `collect()` to force the RDD to execute all the upsert statements we generated.
+
+## Gotchas
+I've alluded to some, but I'll group them here for Postgres:
+
+- There has to be a UNIQUE index on the field you'll be upserting against. Otherwise, Postgres will complain and your operation will fail
+
+- When upserting, make sure that the items you're upserting are all distinct: no element should have the same ID. Failure to do so will mean that 2 or more spark workers could update the same row, which can lead to deadlocks. If you see errors like this, you know it has happened:
+
+```
+TransactionRollbackError: deadlock detected
+DETAIL:  Process 25305 waits for ShareLock on transaction 3188230; blocked by process 25223.
+Process 25223 waits for ShareLock on transaction 3188232; blocked by process 25305.
+HINT:  See server log for query details.
+CONTEXT:  while inserting index tuple (2344,46) in relation "table"
+```
+- the above approach only works for Postgres 9.5 and higher.
