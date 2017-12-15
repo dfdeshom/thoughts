@@ -1,4 +1,4 @@
-Upserting rows in postgresql 9.5 through spark
+Upserting rows in postgresql 9.5 with Spark
 ===============================================
 
 
@@ -36,6 +36,12 @@ The upsert statement itself is pretty straightforward. It's similar to a INSERT 
 INSERT INTO TABLE T(ID, ATTR1, ATTR2) VALUES (1,'A', 'B')
 ON CONFLICT(ID) DO UPDATE SET
 ATTR1=EXCLUDED.ATTR1,
-ATTR1=EXCLUDED.ATTR1;
+ATTR2=EXCLUDED.ATTR2;
 ```
 
+Every upsert statement looks like this so it's pretty easy to generate them programatically. One needs the table name, columns to update and the ID field. Here is a function that returns a statement given those parameters:  
+https://gist.github.com/dfdeshom/89497f7dcd81ad05464b19545a0094e2#file-upsert_statement-py-L1-L23
+
+## Doing the upsert
+
+After generating upsert statement for each item in the RDD, we just need to execute them. In reality we only need to generate the statement for one item: the handy function `psycopg2.extras.execute_batch` will execute the statement in batch against all dict entries in the RDD  : https://gist.github.com/dfdeshom/89497f7dcd81ad05464b19545a0094e2#file-upsert_rdd-py . We're using `mapPartition` here so we don't instantiate thousands of PG connections. We're also using `collect()` to force the RDD to execute all the upsert statements we generated
